@@ -1,0 +1,374 @@
+USE Pikaos;
+
+DROP PROCEDURE IF EXISTS after_insert_competition;
+
+DROP TABLE IF EXISTS team_league_participant;
+DROP TABLE IF EXISTS team_league_day_confrontation;
+DROP TABLE IF EXISTS team_league_day;
+DROP TABLE IF EXISTS team_league;
+
+DROP TABLE IF EXISTS team_cup_participant;
+DROP TABLE IF EXISTS team_cup_confrontation;
+DROP TABLE IF EXISTS team_cup_round;
+DROP TABLE IF EXISTS team_cup;
+
+DROP TABLE IF EXISTS ind_league_participant;
+DROP TABLE IF EXISTS ind_league_day_confrontation;
+DROP TABLE IF EXISTS ind_league_day;
+DROP TABLE IF EXISTS ind_league;
+
+DROP TABLE IF EXISTS ind_cup_participant;
+DROP TABLE IF EXISTS ind_cup_confrontation;
+DROP TABLE IF EXISTS ind_cup_round;
+DROP TABLE IF EXISTS ind_cup;
+
+DROP TABLE IF EXISTS compMessage;
+DROP TABLE IF EXISTS competition;
+DROP TABLE IF EXISTS videogame;
+
+
+DROP TABLE IF EXISTS message;
+DROP TABLE IF EXISTS friend;
+DROP TABLE IF EXISTS friend_request;
+DROP TABLE IF EXISTS chat;
+DROP TABLE IF EXISTS team_request;
+DROP TABLE IF EXISTS team;
+DROP TABLE IF EXISTS user;
+
+DROP TABLE IF EXISTS version;
+
+CREATE TABLE version(
+	version VARCHAR(255) PRIMARY KEY
+);
+
+INSERT INTO version VALUES('1.0.0');
+
+CREATE TABLE user(
+	id INTEGER AUTO_INCREMENT PRIMARY KEY,
+	name VARCHAR(25) UNIQUE NOT NULL,
+	email VARCHAR(255) UNIQUE NOT NULL,
+	password VARCHAR(64) NOT NULL,
+	status VARCHAR(255) NULL,
+	avatar VARCHAR(255) NULL,
+	email_verified TINYINT(1) NOT NULL,
+	team INTEGER NULL
+);
+
+CREATE TABLE team(
+	id INTEGER AUTO_INCREMENT PRIMARY KEY,
+	name VARCHAR(50) UNIQUE NOT NULL,
+	logo VARCHAR(255) NULL,
+	captain INTEGER NOT NULL,
+	
+	FOREIGN KEY (captain) REFERENCES user (id) ON UPDATE CASCADE ON DELETE RESTRICT
+);
+
+CREATE TABLE team_request(
+	team INTEGER,
+	user INTEGER,
+	
+	PRIMARY KEY (user,team),
+	FOREIGN KEY (user) REFERENCES user (id) ON UPDATE CASCADE ON DELETE CASCADE,
+	FOREIGN KEY (team) REFERENCES team (id) ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE chat(
+	id INTEGER AUTO_INCREMENT PRIMARY KEY
+);
+
+
+CREATE TABLE friend_request(
+	from_user INTEGER,
+	to_user INTEGER,
+	
+	PRIMARY KEY (from_user,to_user),
+	FOREIGN KEY (from_user) REFERENCES user (id) ON UPDATE CASCADE ON DELETE CASCADE,
+	FOREIGN KEY (to_user) REFERENCES user (id) ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE friend(
+	userOne INTEGER,
+	userTwo INTEGER,
+	chat INTEGER,
+	
+	PRIMARY KEY (userOne,userTwo,chat),
+	FOREIGN KEY (userOne) REFERENCES user (id) ON UPDATE CASCADE ON DELETE CASCADE,
+	FOREIGN KEY (userTwo) REFERENCES user (id) ON UPDATE CASCADE ON DELETE CASCADE,
+	FOREIGN KEY (chat) REFERENCES chat (id) ON UPDATE CASCADE ON DELETE RESTRICT
+);
+
+CREATE TABLE message (
+	idMessage INTEGER AUTO_INCREMENT,
+	chat INTEGER,
+	Cfrom INTEGER NOT NULL,
+	Chour VARCHAR(8) NOT NULL,
+	Cdate DATE NOT NULL,
+	text VARCHAR(255) NOT NULL,
+	
+	PRIMARY KEY(idMessage,chat),
+	FOREIGN KEY (chat) REFERENCES chat (id) ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+
+CREATE TABLE videogame(
+	id INTEGER AUTO_INCREMENT PRIMARY KEY,
+	title VARCHAR(255) UNIQUE NOT NULL,
+	individual TINYINT(1) NOT NULL,
+	teams TINYINT(1) NOT NULL
+);
+
+CREATE TABLE competition(
+	id INTEGER AUTO_INCREMENT PRIMARY KEY,
+	name VARCHAR(50) NOT NULL,
+	admin INTEGER NOT NULL,
+	state ENUM('preparing','competing','finished','cancelled') NOT NULL,
+	description VARCHAR(255) NULL,
+	created DATE NOT NULL,
+	expire DATE NOT NULL,
+	expired TINYINT(1),
+	videogame INTEGER NOT NULL,
+	type VARCHAR(255) NOT NULL,
+	isPrivate TINYINT(1) NOT NULL,
+	password VARCHAR(40) NULL,
+	
+	FOREIGN KEY (videogame) REFERENCES videogame (id) ON UPDATE CASCADE ON DELETE RESTRICT,
+	FOREIGN KEY (admin) REFERENCES user (id) ON UPDATE CASCADE ON DELETE RESTRICT
+);
+
+CREATE TABLE compMessage(
+	idMessage INTEGER AUTO_INCREMENT,
+	competition INTEGER,
+	Cfrom INTEGER NOT NULL,
+	Chour TIME NOT NULL,
+	Cdate DATE NOT NULL,
+	text VARCHAR(255) NOT NULL,
+	
+	PRIMARY KEY(idMessage,competition),
+	FOREIGN KEY (competition) REFERENCES competition (id) ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE ind_cup(
+	id INTEGER PRIMARY KEY,
+	nRounds INTEGER NULL,
+	
+	FOREIGN KEY (id) REFERENCES competition (id) ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE ind_cup_round(
+	id INTEGER,
+	nRound INTEGER,
+	round_name VARCHAR(50) NOT NULL,
+	
+	PRIMARY KEY (id,nRound),
+	FOREIGN KEY (id) REFERENCES ind_cup (id) ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE ind_cup_confrontation(
+	id INTEGER,
+	nRound INTEGER,
+	player_one VARCHAR(25) NOT NULL,
+	player_two VARCHAR(25) NOT NULL,
+	winner VARCHAR(25) NULL,
+	
+	PRIMARY KEY (id,nRound,player_one,player_two),
+	FOREIGN KEY (id,nRound) REFERENCES ind_cup_round (id,nRound) ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE ind_cup_participant(
+	cup INTEGER,
+	user INTEGER,
+	eliminated TINYINT(1) NOT NULL,
+	
+	PRIMARY KEY (cup,user),
+	FOREIGN KEY (cup) REFERENCES ind_cup (id) ON UPDATE CASCADE ON DELETE CASCADE,
+	FOREIGN KEY (user) REFERENCES user (id) ON UPDATE CASCADE ON DELETE CASCADE
+); 
+
+CREATE TABLE ind_league(
+	id INTEGER PRIMARY KEY,
+	nLeague_days INTEGER NULL,
+	
+	FOREIGN KEY (id) REFERENCES competition (id) ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE ind_league_day(
+	id INTEGER,
+	league_day INTEGER,
+	
+	PRIMARY KEY (id,league_day),
+	FOREIGN KEY (id) REFERENCES ind_league (id) ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE ind_league_day_confrontation(
+	id INTEGER,
+	league_day INTEGER,
+	player_one VARCHAR(25) NOT NULL,
+	player_two VARCHAR(25) NOT NULL,
+	winner VARCHAR(25) NULL,
+	
+	PRIMARY KEY (id,league_day,player_one,player_two),
+	FOREIGN KEY (id,league_day) REFERENCES ind_league_day (id,league_day) ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE ind_league_participant(
+	league INTEGER,
+	user INTEGER,
+	points INTEGER NOT NULL,
+	
+	PRIMARY KEY (user,league),
+	FOREIGN KEY (league) REFERENCES ind_league (id) ON UPDATE CASCADE ON DELETE CASCADE,
+	FOREIGN KEY (user) REFERENCES user (id) ON UPDATE CASCADE ON DELETE CASCADE
+); 
+
+
+CREATE TABLE team_cup(
+	id INTEGER PRIMARY KEY,
+	nRounds INTEGER NULL,
+	
+	FOREIGN KEY (id) REFERENCES competition (id) ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE team_cup_round(
+	id INTEGER,
+	nRound INTEGER,
+	round_name VARCHAR(50) NOT NULL,
+	
+	PRIMARY KEY (id,nRound),
+	FOREIGN KEY (id) REFERENCES team_cup (id) ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE team_cup_confrontation(
+	id INTEGER,
+	nRound INTEGER,
+	team_one VARCHAR(25) NOT NULL,
+	team_two VARCHAR(25) NOT NULL,
+	winner VARCHAR(25) NULL,
+	
+	PRIMARY KEY (id,nRound,team_one,team_two),
+	FOREIGN KEY (id,nRound) REFERENCES team_cup_round (id,nRound) ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE team_cup_participant(
+	cup INTEGER,
+	team INTEGER,
+	eliminated TINYINT(1) NOT NULL,
+	
+	PRIMARY KEY (cup,team),
+	FOREIGN KEY (cup) REFERENCES team_cup (id) ON UPDATE CASCADE ON DELETE CASCADE,
+	FOREIGN KEY (team) REFERENCES team (id) ON UPDATE CASCADE ON DELETE CASCADE
+); 
+
+CREATE TABLE team_league(
+	id INTEGER PRIMARY KEY,
+	nLeague_days INTEGER NULL,
+	
+	FOREIGN KEY (id) REFERENCES competition (id) ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE team_league_day(
+	id INTEGER,
+	league_day INTEGER,
+	
+	PRIMARY KEY (id,league_day),
+	FOREIGN KEY (id) REFERENCES team_league (id) ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE team_league_day_confrontation(
+	id INTEGER,
+	league_day INTEGER,
+	team_one VARCHAR(25) NOT NULL,
+	team_two VARCHAR(25) NOT NULL,
+	winner VARCHAR(25) NULL,
+	
+	PRIMARY KEY (id,league_day,team_one,team_two),
+	FOREIGN KEY (id,league_day) REFERENCES team_league_day (id,league_day) ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE team_league_participant(
+	league INTEGER,
+	team INTEGER,
+	points INTEGER NOT NULL,
+	
+	PRIMARY KEY (team,league),
+	FOREIGN KEY (league) REFERENCES team_league (id) ON UPDATE CASCADE ON DELETE CASCADE,
+	FOREIGN KEY (team) REFERENCES team (id) ON UPDATE CASCADE ON DELETE CASCADE
+); 
+
+/*PROCEDURES*/
+DELIMITER $$
+CREATE TRIGGER after_insert_competition AFTER INSERT ON competition 
+FOR EACH ROW
+BEGIN
+
+	CASE    
+	
+		WHEN NEW.type = 'ind_cup' THEN
+			INSERT INTO ind_cup VALUES(NEW.id,NULL);
+			INSERT INTO ind_cup_participant VALUES(NEW.id,NEW.admin,0);
+			
+		WHEN NEW.type = 'ind_league' THEN
+			INSERT INTO ind_league VALUES(NEW.id,NULL);
+			INSERT INTO ind_league_participant VALUES(NEW.id,NEW.admin,0);
+			
+		WHEN NEW.type = 'team_cup' THEN
+			INSERT INTO team_cup VALUES(NEW.id,NULL);
+			INSERT INTO team_cup_participant VALUES(NEW.id, (SELECT id FROM team WHERE captain = NEW.admin),0);
+			
+		WHEN NEW.type = 'team_league' THEN
+			INSERT INTO team_league VALUES(NEW.id,NULL);
+			INSERT INTO team_league_participant VALUES(NEW.id, (SELECT id FROM team WHERE captain = NEW.admin),0);
+		
+	END CASE;
+	
+END $$
+DELIMITER ;
+
+
+
+/*DEBUG*/
+
+insert into team values(0,'el team patata',NULL,NULL);
+insert into team values(0,'el team patata2',NULL,NULL);
+
+insert into user values(0,'antonio','antonio@gmail.com','1234','soy un crack',NULL,1,NULL);
+insert into user values(0,'paco','paco@gmail.com','1234',NULL,NULL,1,NULL);
+insert into user values(0,'maria','maria@gmail.com','1234','buco gente para team',NULL,1,NULL);
+insert into user values(0,'candela','candela@gmail.com','1234','buco gente para team',NULL,1,NULL);
+insert into user values(0,'juan','juan@gmail.com','1234','buco gente para team',NULL,1,Null);
+insert into user values(0,'android','android@gmail.com','03AC674216F3E15C761EE1A5E255F067953623C8B388B4459E13F978D7C846F4',null,null,1,null);
+
+update user set team = 1 where id = 1;
+update user set team = 2 where id = 2;
+update user set team = 1 where id = 3;
+update user set team = 2 where id = 4;
+
+insert into chat values(1);
+insert into chat values(2);
+
+insert into friend_request values(1,2);
+insert into friend values(1,3,1);
+
+insert into videogame values(0,'League of Legends',1,1);
+insert into videogame values(0,'Hearthstone',1,0);
+insert into videogame values(0,'Brawl Stars',0,1);
+insert into videogame values(0,'Pokemon Go',1,0);
+
+insert into competition values(0,'Torneo lol',1,'competing',NULL,CURDATE(),CURDATE(),0,1,'ind_cup',0,null);
+insert into competition values(0,'Liga hearstone to guay',2,'preparing',NULL,CURDATE(),CURDATE(),0,2,'ind_league',0,null);
+insert into competition values(0,'Torneo lol 2',2,'preparing',NULL,CURDATE(),CURDATE(),0,1,'ind_cup',0,null);
+insert into competition values(0,'Torneo lol 3',1,'preparing',NULL,CURDATE(),CURDATE(),0,1,'ind_cup',1,'1234');
+insert into competition values(0,'Liga orange lol',2,'preparing',NULL,CURDATE(),CURDATE(),0,1,'team_cup',0,null);
+insert into competition values(0,'copa hearstone',3,'competing',NULL,CURDATE(),CURDATE(),0,1,'ind_cup',0,null);
+
+
+insert into ind_cup_round values(1,1,'Semifinal');
+insert into ind_cup_confrontation values(1,1,'antonio','paco',null);
+
+insert into ind_cup_participant values(1,2,0);
+insert into ind_cup_participant values(1,3,0);
+insert into team_cup_participant values(5,1,0);
+
+insert into ind_league_day values(2,1);
+insert into ind_league_day_confrontation values(2,1,'antonio','maria',null);
+insert into ind_league_participant values(2,1,1);
+insert into ind_league_participant values(2,3,3);
